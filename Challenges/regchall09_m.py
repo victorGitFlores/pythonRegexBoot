@@ -8,6 +8,7 @@
 import re
 import datetime
 
+
 patt = r"\[(\d{4}\-\d{2}\-\d{2}\s\d{2}\:\d{2}\:\d{2})\]\s(\w+)\:\s(.+)"
 tot_err = 0
 ts_from = datetime.datetime.strptime("2025-01-16 09:00:00", "%Y-%m-%d %H:%M:%S")
@@ -36,6 +37,7 @@ with open(outfile,"w") as output:
 
 print(f"Total Errors: {tot_err}")
 print(f"File written: {outfile}")
+print("hey, one more thingie"
 
 """ actual output:
 2025-01-16 09:05:45 ERROR Disk space critically low.
