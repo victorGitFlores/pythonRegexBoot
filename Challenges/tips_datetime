@@ -1,0 +1,13 @@
+# store 'datetime' timestamps as strings 'YYYY-MM-DD HH:MM:SS'
+# then convert to datetime for date math.
+# This is a common practice for storing timestamps in databases.
+# because it is way easier than going 'strict datetime'.
+
+#convert string to datetime:
+ts = datetime.datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
+
+# do datetime calcs:
+new_ts = ts + datetime.timedelta(hours=2)
+
+# convert datetime back to string:
+new_ts_str = new_ts.isoformat(" ")
