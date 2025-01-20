@@ -63,6 +63,9 @@ def cvt_log_table(db_name, log_name, log_table_name, patt_log):
         )
         """
     )
+    cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_timestamp ON {log_table_name}(timestamp)")
+    conn.commit()
+
     print(f"Table '{log_table_name}' created.")
 
     # Open the text file and extract data into logs list    here here here here here **************
@@ -86,6 +89,55 @@ def cvt_log_table(db_name, log_name, log_table_name, patt_log):
     # lastly...close the connection
     conn.close()
 
+def parse_log_by_type(db_name, log_table_name, stamp_from, stamp_to):
+    # get the distinct types of log entries...
+    #      Connect to SQLite database
+    conn = sqlite3.connect(db_name)  # Creates 'workfiles.db' if it doesn't exist
+    cursor = conn.cursor()  # Create a cursor for executing SQL commands
+    # print("Database connected.")
+    cursor.execute("""
+    SELECT distinct type
+    FROM log_table
+    """)
+    types = cursor.fetchall()
+
+    for (my_type,) in types:  # Unpack tuple
+        tabname = "table_log_" + my_type
+
+        # Drop and create the table
+        cursor.execute(f"DROP TABLE IF EXISTS {tabname}")
+        cursor.execute(f"""
+            CREATE TABLE {tabname} (
+                id INTEGER PRIMARY KEY,
+                timestamp TEXT,
+                type TEXT,
+                message TEXT
+            )
+        """)
+        conn.commit() # Commit the transaction
+        cursor.execute(f"CREATE INDEX IF NOT EXISTS idx_timestamp ON {tabname}(timestamp)")
+        conn.commit()
+
+
+        # Populate the table
+        cursor.execute(f"""
+        SELECT timestamp, type, message
+        FROM {log_table_name}
+        WHERE type = ? AND timestamp BETWEEN ? AND ?
+        """, (my_type, stamp_from, stamp_to))
+        results = cursor.fetchall()
+
+        # Insert the data into the table for this type
+        cursor.executemany(
+            f"INSERT INTO {tabname} (timestamp, type, message) VALUES (?, ?, ?)", results
+        )
+        conn.commit() # Commit the transaction
+
+
+
+    # Always close the connection when done
+    conn.close()
+
 
 
 def main():
@@ -99,6 +151,8 @@ def main():
     stamp_to = get_user_timestamp("TO", patt_ts, stamp_from)
     # convert log to table:
     cvt_log_table(db_name, log_name, log_table_name, patt_log)
+    # parse log entries by type into tables
+    parse_log_by_type(db_name, log_table_name, stamp_from, stamp_to)
 
 if __name__ == "__main__":
     main()
