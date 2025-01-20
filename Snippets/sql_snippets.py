@@ -1,3 +1,4 @@
+#--------------------------------------------------------------------------------------
 # 1. SQLite Connection
 # Connect to an SQLite database and set up a cursor
 import sqlite3
@@ -17,6 +18,7 @@ def create_table(cursor, tablename):
     cursor.execute(
         f"""
         CREATE TABLE {tablename} (
+            id INTEGER PRIMARY KEY,  -- Auto-incrementing ID
             timestamp TEXT,
             type TEXT,
             message TEXT
@@ -28,13 +30,17 @@ def create_table(cursor, tablename):
 #--------------------------------------------------------------------------------------
 # 3. Insert Into Table
 # Insert multiple rows into a table using executemany.
-logs = [
-    ("2025-01-16 08:15:30", "INFO", "System booted successfully."),
-    ("2025-01-16 08:20:45", "ERROR", "Failed to connect to database."),
-]
+
+with open("system_logs.txt", "r") as file:
+    logs = [
+        (match.group(1), match.group(2), match.group(3))  # timestamp, type, message
+        for line in file
+        if (match := re.search(pattern, line))
+    ]
+
 
 cursor.executemany(
-    "INSERT INTO log_table (timestamp, type, message) VALUES (?, ?, ?)", logs
+    f"INSERT INTO {log_table} (timestamp, type, message) VALUES (?, ?, ?)", logs
 )
 conn.commit()
 print(f"Inserted {len(logs)} rows.")
