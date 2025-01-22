@@ -90,6 +90,8 @@ def cvt_log_table(db_name, log_name, log_table_name, patt_log):
     conn.close()
 
 def parse_log_by_type(db_name, log_table_name, stamp_from, stamp_to):
+    # returns a list of distinct types of log entries
+
     # get the distinct types of log entries...
     #      Connect to SQLite database
     conn = sqlite3.connect(db_name)  # Creates 'workfiles.db' if it doesn't exist
@@ -137,8 +139,46 @@ def parse_log_by_type(db_name, log_table_name, stamp_from, stamp_to):
 
     # Always close the connection when done
     conn.close()
+    # return distinct types as list of strings...
+    return [t[0] for t in types]
+
+def print_hmany_by_type(db_name, log_table_name, log_types):
+    #connect to db
+    # Connect to SQLite database
+    conn = sqlite3.connect(db_name)  # Creates 'workfiles.db' if it doesn't exist
+    cursor = conn.cursor()  # Create a cursor for executing SQL commands
+
+    for log_type in log_types:
+        log_name = "table_log_" + log_type
+        cursor.execute(f"""
+        SELECT COUNT(*)
+        FROM {log_name}
+        WHERE type = '{log_type}'
+        """)
+        count = cursor.fetchone()[0]
+        print(f"{log_type}: {count} logs")
+
+    # print detail for ERROR type
+    log_name = "table_log_ERROR"
+    print("ERRORS in time range:")
+    cursor.execute(f"""
+    SELECT timestamp, type, message
+    FROM {log_name}
+    WHERE type = 'ERROR'
+    """)
+    results = cursor.fetchall()
+
+    for row in results:
+        print(row)
 
 
+
+
+
+
+
+    # lastly...close the connection
+    conn.close()
 
 def main():
     patt_ts = r"(\d{4})\-(\d{2})\-(\d{2})\s(\d{2})\:(\d{2})\:(\d{2})"
@@ -146,13 +186,39 @@ def main():
     log_name = "system_logs_multi.txt"
     log_table_name = "log_table"
     db_name = "workfiles.db"
+    
     # get from/to timestamps from user
     stamp_from = get_user_timestamp("FROM", patt_ts)
     stamp_to = get_user_timestamp("TO", patt_ts, stamp_from)
+    
     # convert log to table:
     cvt_log_table(db_name, log_name, log_table_name, patt_log)
+    
     # parse log entries by type into tables
-    parse_log_by_type(db_name, log_table_name, stamp_from, stamp_to)
+    working_types = parse_log_by_type(db_name, log_table_name, stamp_from, stamp_to)
+
+    # print type/how many entries
+    print_hmany_by_type(db_name, log_table_name, working_types)
 
 if __name__ == "__main__":
     main()
+
+
+# actual output:
+""""
+/c/_home/learning/python ai bootcamp 2025/challenges> python regchall10.py
+Give me FROM timestamp in format: YYYY-MM-DD HH:MM:SS: 2025-01-16 00:00:00
+Give me TO timestamp in format: YYYY-MM-DD HH:MM:SS: 2025-01-16 23:59:59
+Database connected.
+Table 'log_table' created.
+Inserted 12 rows.
+INFO: 4 logs
+ERROR: 3 logs
+DEBUG: 3 logs
+WARNING: 2 logs
+ERRORS in time range:
+('2025-01-16 08:20:45', 'ERROR', 'Failed to connect to database.')
+('2025-01-16 09:00:45', 'ERROR', 'Disk space critically low.')
+('2025-01-16 09:40:00', 'ERROR', 'Failed to write to log file.')
+/c/_home/learning/python ai bootcamp 2025/challenges>
+"""
