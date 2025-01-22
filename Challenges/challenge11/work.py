@@ -19,7 +19,6 @@ def init_sql(db_name):
     print("Database connected with datetime support.")
     return conn, cursor  # Return connection and cursor for reuse
 
-
 def cvt_log_table(db_name, log_name, table_name, patt_log):
     conn, cursor = init_sql(db_name)
     # Create table
@@ -50,9 +49,12 @@ def cvt_log_table(db_name, log_name, table_name, patt_log):
     )
     conn.commit()  # Commit the transaction
 
-def split_logs_db(db_name, table_name):
-    conn = sqlite3.connect(db_name)
-    cursor = conn.cursor()
+    # lastly, close the connection
+    conn.close()
+
+
+def split_logs_db(db_name, table_name): # returns distinct_types list
+    conn, cursor = init_sql(db_name)
 
     # select distinct types from log_table, use this to create new tables
     cursor.execute(f"SELECT DISTINCT type FROM {table_name}")
@@ -62,6 +64,43 @@ def split_logs_db(db_name, table_name):
         log_table_by_type = "log_tab_" + distinct_type
         cursor.execute(f"CREATE TABLE {log_table_by_type} AS SELECT * FROM {table_name} WHERE type = '{distinct_type}'")
         conn.commit()
+    
+    # lastly, close the connection
+    conn.close()
+    return distinct_types
+
+def summarize_data(db_name, table_name):
+    conn, cursor = init_sql(db_name)
+
+    # summary by type
+    cursor.execute("""
+    SELECT type, COUNT(*)
+    FROM log_table
+    GROUP BY type
+    ORDER BY type
+    """)
+    results = cursor.fetchall()
+    print("Log Type Summary:")
+    for type, count in results:
+        print(f"{type}: {count} logs")
+
+    # summary by module
+    cursor.execute("""
+    SELECT module, COUNT(*)
+    FROM log_table
+    GROUP BY module
+    ORDER BY module
+    """)
+    results = cursor.fetchall()
+    print("Module Summary:")
+    for module, count in results:
+        print(f"{module}: {count} logs")
+
+
+
+    
+    # lastly, close the connection
+    conn.close()
 
 
 
@@ -73,7 +112,9 @@ def run_app():
 
     # convert log to table:
     cvt_log_table(db_name, log_name, table_name, log_patt)
-    split_logs_db(db_name, table_name)
+    # distinct_types = split_logs_db(db_name, table_name)
+    summarize_data(db_name, table_name)
+
 
 if __name__ == "__main__":
     run_app()
