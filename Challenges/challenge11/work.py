@@ -62,6 +62,7 @@ def split_logs_db(db_name, table_name): # returns distinct_types list
 
     for distinct_type in distinct_types:
         log_table_by_type = "log_tab_" + distinct_type
+        cursor.execute(f"DROP TABLE IF EXISTS {log_table_by_type}")  # Remove old table
         cursor.execute(f"CREATE TABLE {log_table_by_type} AS SELECT * FROM {table_name} WHERE type = '{distinct_type}'")
         conn.commit()
     
@@ -114,7 +115,8 @@ def run_app():
     cvt_log_table(db_name, log_name, table_name, log_patt)
     # distinct_types = split_logs_db(db_name, table_name)
     summarize_data(db_name, table_name)
-
+    
+    distinct_type = get_options(db_name, table_name, "type")
 
 if __name__ == "__main__":
     run_app()

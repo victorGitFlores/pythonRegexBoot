@@ -52,7 +52,6 @@ def cvt_log_table(db_name, log_name, table_name, patt_log):
     # lastly, close the connection
     conn.close()
 
-
 def split_logs_db(db_name, table_name): # returns distinct_types list
     conn, cursor = init_sql(db_name)
 
@@ -62,6 +61,7 @@ def split_logs_db(db_name, table_name): # returns distinct_types list
 
     for distinct_type in distinct_types:
         log_table_by_type = "log_tab_" + distinct_type
+        cursor.execute(f"DROP TABLE IF EXISTS {log_table_by_type}")  # Remove old table
         cursor.execute(f"CREATE TABLE {log_table_by_type} AS SELECT * FROM {table_name} WHERE type = '{distinct_type}'")
         conn.commit()
 
@@ -81,7 +81,7 @@ def summarize_data(db_name, table_name):
     ORDER BY type
     """)
     results = cursor.fetchall()
-    print("Log Type Summary:")
+    print("\n\nLog Type Summary:")
     for type, count in results:
         print(f"{type}: {count} logs")
 
@@ -93,7 +93,7 @@ def summarize_data(db_name, table_name):
     ORDER BY module
     """)
     results = cursor.fetchall()
-    print("Module Summary:")
+    print("\n\nModule Summary:")
     for module, count in results:
         print(f"{module}: {count} logs")
 
@@ -183,18 +183,21 @@ def run_app():  # mainline
     origin_code_label = tk.Label(root, text="Select Origin Code:")
     origin_code_label.pack()
 
-    origin_codes = ["ALL"] + get_options(db_name, table_name, "message")
-    # Extract numeric codes from "code=xxx" in messages
-    origin_codes = sorted(set(code.split("=")[1].strip(")") for code in origin_codes if "code=" in code))
+
+
+
+    origin_codes = ["ALL"] + get_options(db_name, table_name, "code")
     origin_code_var = tk.StringVar(value=origin_codes[0])
     origin_code_dropdown = ttk.Combobox(root, textvariable=origin_code_var, values=origin_codes, state="readonly")
     origin_code_dropdown.pack()
+
+
 
     # Text area to display results
     result_text = tk.Text(root, width=80, height=20)
     result_text.pack()
 
-    def filter_logs():
+    def btn_cmd_filter_logs():
         log_type = log_type_var.get()
         origin_code = origin_code_var.get()
         logs = fetch_filtered_logs(db_name, table_name, log_type, origin_code)
@@ -208,10 +211,14 @@ def run_app():  # mainline
             result_text.insert(tk.END, "No matching logs found.\n")
 
     # Filter button
-    filter_button = tk.Button(root, text="Filter Logs", command=filter_logs)
+    filter_button = tk.Button(root, text="Filter Logs", command=btn_cmd_filter_logs)
     filter_button.pack()
 
     root.mainloop()
+
+
+    distinct_type = get_options(db_name, table_name, "type")
+    distinct_code = get_options(db_name, table_name, "code")
 
 
 if __name__ == "__main__":
