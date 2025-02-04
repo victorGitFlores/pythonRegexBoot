@@ -67,15 +67,22 @@ class Main(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
         self.place(x=0, y=0, relx=.3, relwidth=.7, relheight=1)
+        Main_half(self, "red", "Button 01", "Label 01")
+        Main_half(self, "blue", "Button 02", "Label 02")
+   
+class Main_half(ttk.Frame):
+    def __init__(self, parent, color, butt_text, lab_text):
+        super().__init__(parent)
+        self.place(x=0, y=0, relx=.3, relwidth=.7, relheight=.5)
         
         frame = ttk.Frame(self)
-        label = ttk.Label(frame, text="label 01", background='red')   
-        button = ttk.Button(frame, text="Butt L")
+        label = ttk.Label(self, text=lab_text, background=color)   
+        button = ttk.Button(self, text=butt_text)
         # place label and button on the frame...
         label.pack(side='top', fill='both', expand=True)
         button.pack(side='bottom', fill='both', expand=True, pady=10)
         # place the frame on the main frame...
-        frame.pack(side='left', fill='both', expand=True, padx=20, pady=20)
+        self.pack(side='left', fill='both', expand=True, padx=20, pady=20)
 
 
 # mainline
